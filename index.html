@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像処理</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>画像処理</h1>
+    <article>
+        <div id="dragDropArea">
+            <div class="drag-drop-inside">
+                <p class="drag-drop-info">ここにファイルをドロップ</p>
+                <p>または</p>
+                <p class="drag-drop-buttons">
+                    <input id="fileInput" type="file" accept="image/*" value="ファイルを選択" name="photo" onChange="photoPreview(event)">
+                </p>
+                <div id="previewArea"></div>
+            </div>
+        </div>
+        <div id="sidebar">
+            <ul>
+                <li>グレースケール</li>
+                <li>二値化</li>
+                <p>-----⚪︎---</p>
+                <li>モザイク</li>
+                <p>--⚪︎------</p>
+                <li>文字挿入</li>
+            </ul>
+        </div>
+</article>
+    <script type="text/javascript" src="script.js"></script>
+</body>
+</html>
