@@ -17,20 +17,20 @@
                 <p class="drag-drop-buttons">
                     <input id="fileInput" type="file" accept="image/*" value="ファイルを選択" name="photo" onChange="photoPreview(event)">
                 </p>
-                <div id="previewArea"></div>
+                <div id="preview"></div>
             </div>
         </div>
         <div id="sidebar">
             <ul>
-                <li>グレースケール</li>
+                <button id="grayscale-btn">グレースケール</button>
                 <li>二値化</li>
-                <p>-----⚪︎---</p>
+                <label><input type="range" min="1" max="50" value="0" id="slider"></label>
                 <li>モザイク</li>
-                <p>--⚪︎------</p>
+                <label><input type="range" min="1" max="50" value="0" id="slider"></label>
                 <li>文字挿入</li>
             </ul>
         </div>
-</article>
+    </article>
     <script type="text/javascript" src="script.js"></script>
 </body>
 </html>
