@@ -1,0 +1,31 @@
+<!DOCTYPE >
+<html>
+<head>
+  <title>画像処理</title>
+  <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+    <h1>画像処理</h1>
+    <article>
+        <div class="previewArea">
+            <input type="file" id="imageInput">
+            <button id="saveBtn">画像を保存</button>
+            <br>
+            <img id="preview" style="margin-top: 10px;">
+            <br>
+            <a id="downloadLink" style="display: none;">ダウンロード</a>
+        </div>
+        <div id="sidebar">
+            <ul>
+                <button id="grayscale-btn">グレースケール</button>
+                <li>二値化</li>
+                <label><input type="range" min="1" max="50" value="0" id="slider"></label>
+                <li>モザイク</li>
+                <label><input type="range" min="1" max="50" value="0" id="slider"></label>
+                <li>文字挿入</li>
+            </ul>
+        </div>
+    </article>
+    <script type="text/javascript" src="script2.js"></script>
+</body>
+</html>

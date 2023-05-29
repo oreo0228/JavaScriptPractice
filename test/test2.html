@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>画像プレビューとグレースケール加工</title>
+  <style>
+    #preview {
+      max-width: 300px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <input type="file" id="imageInput">
+  <br>
+  <button id="grayscaleBtn" disabled>グレースケール</button>
+  <button id="resetBtn" disabled>元に戻す</button>
+  <br>
+  <img id="preview" src="#" alt="プレビュー">
+
+  <script>
+    // 画像選択時にプレビュー表示
+    const imageInput = document.getElementById('imageInput');
+    var previewImage = document.getElementById('preview');
+    let originalImageSrc = '';
+
+    imageInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        previewImage.src = e.target.result;
+        grayscaleBtn.disabled = false;
+        resetBtn.disabled = false;
+        originalImageSrc = e.target.result;
+      }
+      console.log(originalImageSrc);
+
+      reader.readAsDataURL(file);
+    });
+
+    // グレースケール加工
+    const grayscaleBtn = document.getElementById('grayscaleBtn');
+    grayscaleBtn.addEventListener('click', function() {
+      previewImage.style.filter = 'grayscale(100%)';
+    });
+
+    // 元に戻す
+    const resetBtn = document.getElementById('resetBtn');
+    resetBtn.addEventListener('click', function() {
+      previewImage.src = originalImageSrc;
+      previewImage.style.filter = 'none';
+    });
+  </script>
+</body>
+</html>
+

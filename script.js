@@ -7,55 +7,27 @@ var binarySlider = document.getElementById('binary-slider');
 var resetElement = document.getElementById('reset-btn');
 
 const canvas = document.getElementById('canvas');
-
-fileArea.addEventListener('dragover', function(evt){
-    evt.preventDefault();
-    fileArea.classList.add('dragover');
-});
-
-fileArea.addEventListener('dragleave', function(evt){
-    evt.preventDefault();
-    fileArea.classList.remove('dragover');
-});
-
-fileArea.addEventListener('drop', function(evt){
-    evt.preventDefault();
-    fileArea.classList.remove('dragenter');
-    var files = evt.dataTransfer.files;
-    fileInput.files = files;
-    photoPreview('onChange',files[0]);
-});
+const imageInput = document.getElementById('imageInput');
+const previewImage = document.getElementById('preview');
+let originalImageSrc = '';
 
 //プレビュー表示
-function photoPreview(event, f = null) {
-    var file = f;
-    if(file === null){
-        file = event.target.files[0];
-    }
-    var reader = new FileReader();
-    reader.readAsDataURL(file);
-    var preview = document.getElementById("preview");
-    // ここに画像が入る
-    var previewImage = document.getElementById("previewImage");
+imageInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
 
-    if(previewImage != null) {
-        preview.removeChild(previewImage);
+    reader.onload = function(e) {
+      previewImage.src = e.target.result;
+      originalImageSrc = e.target.result;
     }
-
-    // 画像読み込み完了時に実行
-    reader.onload = function(event) {
-        var img = document.createElement("img");
-        img.setAttribute("src", reader.result);
-        img.setAttribute("id", "previewImage");
-        preview.appendChild(img);
-    };
+    console.log(originalImageSrc);
 
     reader.readAsDataURL(file);
-}
+  });
 
 // グレースケールボタンが押された時
 grayscaleElement.addEventListener('click', function() {
-    var img = document.getElementById('previewImage');
+    var img = document.getElementById('preview');
   
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
@@ -78,8 +50,8 @@ grayscaleElement.addEventListener('click', function() {
   
     // 変換後の画像をプレビュー表示  
     context.putImageData(imageData, 0, 0);
-    img.src = canvas.toDataURL();
-    //console.log(img_url);
+    //img.src = canvas.toDataURL();
+    previewImage.src = canvas.toDataURL();
 });
 
 function binary(url, k) {
@@ -115,7 +87,7 @@ function binary(url, k) {
         //data[i + 3] = imageData[i + 3];
     }
     context.putImageData(imageData, 0, 0);
-    img.src = canvas.toDataURL();
+    previewImage.src = canvas.toDataURL();
     console.log('binary-slider');
 }
 
@@ -125,7 +97,7 @@ binaryElement.addEventListener('click', function() {
     //閾値
     const THRESHOLD = 128;
 
-    var img = document.getElementById('previewImage');
+    var img = document.getElementById('preview');
   
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
@@ -160,8 +132,7 @@ binaryElement.addEventListener('click', function() {
 //2値化のスライドバー
 binarySlider.addEventListener('change', function(e) {
     var value = document.getElementById('binary-slider').value;
-    binary(img_url, Number(value));
-    console.log(value);
+    binary(originalImageSrc, Number(value));
 });
 
 //スライドバー
@@ -174,10 +145,11 @@ document.getElementById('slider').addEventListener('change', function(e) {
 */
 
 //もとに戻す
-resetElement.addEventListener('click', function(e) {
-    
+resetElement.addEventListener('click', function() {
+    previewImage.src = originalImageSrc;
 });
 
+/*
 // 画像を保存ボタンが押された時の処理
 document.getElementById('saveBtn').addEventListener('click', function() {
     var img = document.getElementById('preview');
@@ -187,3 +159,4 @@ document.getElementById('saveBtn').addEventListener('click', function() {
     downloadLink.download = 'processed_image.png';
     downloadLink.style.display = 'block';
 });
+*/

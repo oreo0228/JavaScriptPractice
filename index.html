@@ -10,16 +10,8 @@
 <body>
     <h1>画像処理</h1>
     <article>
-        <div id="dragDropArea">
-            <div class="drag-drop-inside">
-                <p class="drag-drop-info">ここにファイルをドロップ</p>
-                <p>または</p>
-                <p class="drag-drop-buttons">
-                    <input id="fileInput" type="file" accept="image/*" value="ファイルを選択" name="photo" onChange="photoPreview(event)">
-                </p>
-                <div id="preview"></div>
-            </div>
-        </div>
+        <input type="file" id="imageInput">
+        <img id="preview" src="#" alt="プレビュー">
         <div id="sidebar">
             <ul>
                 <button id="grayscale-btn">グレースケール</button>
@@ -30,6 +22,7 @@
                 <li>モザイク</li>
                 <label><input type="range" min="1" max="50" value="0" id="slider"></label>
                 <li>文字挿入</li>
+                <button id="reset-btn">元に戻す</button>
             </ul>
         </div>
     </article>
