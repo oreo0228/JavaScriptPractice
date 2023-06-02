@@ -6,6 +6,7 @@ var mosaicSlider = document.getElementById('mosaic-slider');
 var binaryElement = document.getElementById('binary-btn');
 var binarySlider = document.getElementById('binary-slider');
 var faceDetectionElement = document.getElementById('faceDetection-btn');
+var facemosaicElement = document.getElementById('facemosaic-btn');
 var resetElement = document.getElementById('reset-btn');
 
 const MODEL_URL = "./weights";
@@ -128,6 +129,7 @@ mosaicSlider.addEventListener('change', function(e) {
     mosaic(originalImageSrc, Number(value));
 });
 
+// モザイク関数
 function mosaic(url, k) {
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
@@ -143,6 +145,7 @@ function mosaic(url, k) {
     previewImage.src = canvas.toDataURL();
 }
 
+// ブロック内を平均色で埋める
 function blurColor(canvas, ctx, blockSize) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
@@ -166,7 +169,7 @@ function blurColor(canvas, ctx, blockSize) {
     ctx.putImageData(imageData, 0, 0);
 }
 
-// 顔認識
+// 顔検出ボタンを押すと顔を検出する
 faceDetectionElement.addEventListener("click", function() {
     detectAllFaces(originalImageSrc);
 });
@@ -185,14 +188,15 @@ async function loadModels(){
 	]);
 }
 
+// 顔検出
 async function detectAllFaces(url){
 	console.log("detectAllFaces");
-    var img = new Image();
-    img.src = url;
 	
 	// 1, 画像の読み込み
 	//img = await faceapi.fetchImage(FILE_URL);
     //img.src = await faceapi.fetchImage(originalImageSrc);
+    var img = new Image();
+    img.src = url;
 
 	// 2, HTMLからキャンバスを取得し画像を描画
     var canvas = document.createElement('canvas');
@@ -213,6 +217,9 @@ async function detectAllFaces(url){
 	rData.forEach(data=>{drawResult(data, canvas, context);});
 }
 
+
+/*
+// 顔検出した結果を表示
 function drawResult(data, canvas, context){
 	console.log("drawResult!!");
 	//console.log(data);
@@ -226,6 +233,7 @@ function drawResult(data, canvas, context){
 	context.strokeRect(box.x, box.y, box.width, box.height);// 長方形の描画
     previewImage.src = canvas.toDataURL();
 }
+*/
 
 //もとに戻す
 resetElement.addEventListener('click', function() {
