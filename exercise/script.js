@@ -27,12 +27,12 @@ imageInput.addEventListener('change', function(event) {
     const reader = new FileReader();
 
     reader.onload = function(e) {
-      previewImage.src = e.target.result;
-      originalImageSrc = e.target.result;
+        previewImage.src = e.target.result;
+        originalImageSrc = e.target.result;
     }
 
     reader.readAsDataURL(file);
-  });
+});
 
 
 // グレースケールボタンが押された時
@@ -40,16 +40,16 @@ grayscaleElement.addEventListener('click', function() {
     //var img = document.getElementById('preview');
     var img = new Image();
     img.src = originalImageSrc;
-  
+
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
-  
+
     canvas.width = img.width;
     canvas.height = img.height;
-  
+
     // 画像をキャンバスに描画
     context.drawImage(img, 0, 0);
-  
+
     // グレースケールに変換
     var imageData = context.getImageData(0, 0, img.width, img.height);
     var data = imageData.data;
@@ -59,8 +59,8 @@ grayscaleElement.addEventListener('click', function() {
         data[i + 1] = gray;
         data[i + 2] = gray;
     }
-  
-    // 変換後の画像をプレビュー表示  
+
+    // 変換後の画像をプレビュー表示
     context.putImageData(imageData, 0, 0);
     //img.src = canvas.toDataURL();
     previewImage.src = canvas.toDataURL();
@@ -87,10 +87,10 @@ function binary(url, k) {
     //var img = document.getElementById('previewImage');
     var img = new Image();
     img.src = url;
-  
+
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
-  
+
     canvas.width = img.width;
     canvas.height = img.height;
 
@@ -99,7 +99,7 @@ function binary(url, k) {
     var imageData = context.getImageData(0, 0, img.width, img.height);
     var data = imageData.data;
     for (var i = 0; i < data.length; i += 4) {
-    
+
         var y = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
         y = parseInt(y, 10);
         //閾値未満は0、閾値以上は255
@@ -148,6 +148,7 @@ function mosaic(url, k) {
 // ブロック内を平均色で埋める
 function blurColor(canvas, ctx, blockSize) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    console.log(typeof(imageData));
     const data = imageData.data;
 
     for (let y = 0; y < canvas.height; y += blockSize) {
@@ -191,7 +192,7 @@ async function loadModels(){
 // 顔検出
 async function detectAllFaces(url){
 	console.log("detectAllFaces");
-	
+
 	// 1, 画像の読み込み
 	//img = await faceapi.fetchImage(FILE_URL);
     //img.src = await faceapi.fetchImage(originalImageSrc);
@@ -211,29 +212,55 @@ async function detectAllFaces(url){
 	// 3, 顔認識の実行と認識結果の取得
 	const iSize = {width: img.width, height: img.height};
 	const fData = await faceapi.detectAllFaces(img).withFaceLandmarks();
-	
+
 	// 4, 認識結果のリサイズ
 	const rData = await faceapi.resizeResults(fData, iSize);
 	rData.forEach(data=>{drawResult(data, canvas, context);});
 }
 
 
-/*
 // 顔検出した結果を表示
 function drawResult(data, canvas, context){
-	console.log("drawResult!!");
-	//console.log(data);
+    const blockSize = 10;
 
 	const box = data.detection.box;// 長方形のデータ
 	const mrks = data.landmarks.positions;
 
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const imdata = imageData.data;
+    var faceWidth = Math.floor(box.width);
+    var faceHeight = Math.floor(box.height);
+    var faceX = Math.floor(box.x);
+    var faceY = Math.floor(box.y);
+
+    /*
 	context.fillStyle = "red";
 	context.strokeStyle = "red";
 	context.lineWidth = 4;
 	context.strokeRect(box.x, box.y, box.width, box.height);// 長方形の描画
+    */
+
+    for (let y = faceY; y < faceHeight + faceY; y += blockSize) {
+        for (let x = faceX; x < faceWidth + faceX; x += blockSize) {
+            const red = imdata[(y * canvas.width + x) * 4];
+            const green = imdata[(y * canvas.width + x) * 4 + 1];
+            const blue = imdata[(y * canvas.width + x) * 4 + 2];
+
+            for (let i = 0; i < blockSize; i++) {
+                for (let j = 0; j < blockSize; j++) {
+                    const pixelIndex = ((y + i) * canvas.width + (x + j)) * 4;
+                    imdata[pixelIndex] = red;
+                    imdata[pixelIndex + 1] = green;
+                    imdata[pixelIndex + 2] = blue;
+                }
+            }
+        }
+    }
+
+    context.putImageData(imageData, 0, 0);
     previewImage.src = canvas.toDataURL();
+    console.log("drawResult!!");
 }
-*/
 
 //もとに戻す
 resetElement.addEventListener('click', function() {
