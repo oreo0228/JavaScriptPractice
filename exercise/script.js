@@ -6,7 +6,7 @@ var mosaicSlider = document.getElementById('mosaic-slider');
 var binaryElement = document.getElementById('binary-btn');
 var binarySlider = document.getElementById('binary-slider');
 var faceDetectionElement = document.getElementById('faceDetection-btn');
-var facemosaicElement = document.getElementById('facemosaic-btn');
+var faceMosaicElement = document.getElementById('faceMosaic-btn');
 var resetElement = document.getElementById('reset-btn');
 
 const MODEL_URL = "./weights";
@@ -75,7 +75,7 @@ binaryElement.addEventListener('click', function(e) {
 });
 
 //スライダーで2値化
-binarySlider.addEventListener('change', function(e) {
+binarySlider.addEventListener('input', function(e) {
     var value = document.getElementById('binary-slider').value;
     // スライダーの値で2値化
     binary(originalImageSrc, Number(value));
@@ -123,7 +123,7 @@ mosaicElement.addEventListener('click', function() {
 });
 
 //スライダーでモザイク化
-mosaicSlider.addEventListener('change', function(e) {
+mosaicSlider.addEventListener('input', function(e) {
     var value = document.getElementById('mosaic-slider').value;
     // スライダーの値でモザイク化
     mosaic(originalImageSrc, Number(value));
@@ -172,7 +172,7 @@ function blurColor(canvas, ctx, blockSize) {
 
 // 顔検出ボタンを押すと顔を検出する
 faceDetectionElement.addEventListener("click", function() {
-    detectAllFaces(originalImageSrc);
+    detectAllFaces1(originalImageSrc);
 });
 
 window.onload = (event)=>{
@@ -190,7 +190,7 @@ async function loadModels(){
 }
 
 // 顔検出
-async function detectAllFaces(url){
+async function detectAllFaces1(url){
 	console.log("detectAllFaces");
 
 	// 1, 画像の読み込み
@@ -218,27 +218,67 @@ async function detectAllFaces(url){
 	rData.forEach(data=>{drawResult(data, canvas, context);});
 }
 
-
-// 顔検出した結果を表示
+// 検出した顔を赤枠で囲む
 function drawResult(data, canvas, context){
-    const blockSize = 10;
-
 	const box = data.detection.box;// 長方形のデータ
 	const mrks = data.landmarks.positions;
 
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const imdata = imageData.data;
-    var faceWidth = Math.floor(box.width);
-    var faceHeight = Math.floor(box.height);
-    var faceX = Math.floor(box.x);
-    var faceY = Math.floor(box.y);
-
-    /*
 	context.fillStyle = "red";
 	context.strokeStyle = "red";
 	context.lineWidth = 4;
 	context.strokeRect(box.x, box.y, box.width, box.height);// 長方形の描画
-    */
+
+    previewImage.src = canvas.toDataURL();
+}
+
+// 顔を検出してモザイクをかける
+faceMosaicElement.addEventListener("click", function() {
+    detectAllFaces2(originalImageSrc);
+});
+
+// 顔を検出する
+async function detectAllFaces2(url){
+	console.log("detectAllFaces");
+
+	// 1, 画像の読み込み
+	//img = await faceapi.fetchImage(FILE_URL);
+    //img.src = await faceapi.fetchImage(originalImageSrc);
+    var img = new Image();
+    img.src = url;
+
+	// 2, HTMLからキャンバスを取得し画像を描画
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+	//canvas = document.getElementById("canvas");
+	canvas.width = img.width;
+	canvas.height = img.height;
+	//context = canvas.getContext("2d");
+	context.fillRect(0, 0, canvas.width, canvas.height);
+	context.drawImage(img, 0, 0);// 画像の描画
+
+	// 3, 顔認識の実行と認識結果の取得
+	const iSize = {width: img.width, height: img.height};
+	const fData = await faceapi.detectAllFaces(img).withFaceLandmarks();
+
+	// 4, 認識結果のリサイズ
+	const rData = await faceapi.resizeResults(fData, iSize);
+	rData.forEach(data=>{facemosaic(data, canvas, context);});
+}
+
+// 顔検出した顔の部分にモザイクをかける
+function facemosaic(data, canvas, context){
+	const box = data.detection.box;// 長方形のデータ
+	const mrks = data.landmarks.positions;
+    var blockSize = Math.floor(box.width / 10);
+    console.log(box.width);
+
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const imdata = imageData.data;
+
+    var faceWidth = Math.floor(box.width);
+    var faceHeight = Math.floor(box.height);
+    var faceX = Math.floor(box.x);
+    var faceY = Math.floor(box.y);
 
     for (let y = faceY; y < faceHeight + faceY; y += blockSize) {
         for (let x = faceX; x < faceWidth + faceX; x += blockSize) {
