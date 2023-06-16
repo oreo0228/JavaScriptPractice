@@ -224,9 +224,16 @@ function init() {
     console.log('putObject');
     if (e.code === "KeyG") {
       const ray = generateRaycast();
-      const pointX = Math.floor(ray.position.x);
-      const pointY = Math.floor(ray.position.y);
-      const pointZ = Math.floor(ray.position.z);
+      // レイキャストにぶつかったオブジェクトを得る
+      const intersects = ray.intersectObjects(scene.children);
+      if (intersects.length === 0) {
+        return;
+      }
+      console.log(intersects[0]);
+
+      var pointX = Math.floor(intersects[0].object.position.x);
+      var pointY = Math.floor(intersects[0].object.position.y);
+      var pointZ = Math.floor(intersects[0].object.position.z);
       if (pointX % 2 === 0) {
         pointX += 1;
       }
@@ -236,7 +243,7 @@ function init() {
       if (pointZ % 2 === 0) {
         pointX += 1;
       }
-      const normal = ray.normal;
+      const normal = intersects[0].normal;
 
       pointX += normal.x * 2;
       pointY += normal.y * 2;
