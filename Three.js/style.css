@@ -1,0 +1,23 @@
+#inventory {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: 780px;
+    height: 80px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+}
+
+.inventory-item {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    margin-right: 10px;
+    background-color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.highlight {
+    border: 2px solid yellow;
+}

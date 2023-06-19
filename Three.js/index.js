@@ -136,6 +136,27 @@ function init() {
 
   animate();
 
+  // オブジェクトとの衝突判定
+  function checkCollision() {
+    const rayUpX = new THREE.Raycaster();
+    const rayUpreX = new THREE.Raycaster();
+    const rayDownX = new THREE.Raycaster();
+    const rayUpY = new THREE.Raycaster();
+    const rayDownY = new THREE.Raycaster();
+    const rayUpZ = new THREE.Raycaster();
+    const rayDownZ = new THREE.Raycaster();
+
+  }
+
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, -1, 0),
+      new THREE.Vector3(0, -1, -5),
+    ]),
+    new THREE.MeshNormalMaterial()
+  );
+  camera.add(line);
+
   // マウス座標管理用のベクトル
   const mouse = new THREE.Vector2();
   // レイキャストを作成
@@ -145,26 +166,12 @@ function init() {
   document.addEventListener('mousedown', generateRaycast, false);
 
   // 画面中央からレイキャストを生成
-  function generateRaycast(e) {
+  function generateRaycast() {
     const center = new THREE.Vector3(0, 0, 0);
-    /*
-    // カメラの視点（中心位置）を取得
-    const cameraCenter = new THREE.Vector3();
-    camera.getWorldPosition(cameraCenter);
-
-    // マウスの位置を正規化デバイス座標系（Normalized Device Coordinates, NDC）に変換
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-    // マウス位置のベクトルを3D空間に変換
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-    */
 
     // カメラの中心位置からレイキャストを生成
     const ray = new THREE.Raycaster();
     ray.setFromCamera(center, camera);
-    //const ray = new THREE.Raycaster(center, camera);
 
     // レイキャストにぶつかったオブジェクトを得る
     const intersects = ray.intersectObjects(scene.children);
@@ -220,13 +227,17 @@ function init() {
     }
   }
 
+  // Gキーでブロックを設置
   const putObject = (e) =>{
     console.log('putObject');
     if (e.code === "KeyG") {
       const ray = generateRaycast();
       // レイキャストにぶつかったオブジェクトを得る
       const intersects = ray.intersectObjects(scene.children);
+      // オブジェクトが何もないor5マス以上離れていたら終了
       if (intersects.length === 0) {
+        return;
+      } else if (intersects[0].distance > 10) {
         return;
       }
       console.log(intersects[0]);
@@ -265,6 +276,83 @@ function init() {
     scene.add(cube);
   }
 
+  // アイテムインベントリの選択アイテムインデックス
+  let selectedItemIndex = 0;
+
+  // アイテムの種類とテクスチャ
+  const items = [
+    { name: 'Wood', texture: 'images/wood.png' },
+    { name: 'Ground', texture: 'images/Ground.png' },
+    { name: 'item3', texture: 'images/tya.png' },
+    // 追加のアイテムをここに追加
+  ];
+
+  // アイテムインベントリを作成する関数
+  function createInventory() {
+    // アイテムインベントリ要素を取得
+    const inventory = document.getElementById('inventory');
+    inventory.innerHTML = '';
+
+    // アイテムを表示する要素を作成
+    items.forEach((item, index) => {
+      const itemElement = document.createElement('div');
+      itemElement.classList.add('inventory-item');
+      itemElement.style.backgroundImage = `url(${item.texture})`;
+
+      // アイテムをクリックしたときの処理
+      itemElement.addEventListener('click', () => {
+        // 選択アイテムインデックスを更新
+        selectedItemIndex = index;
+        // 選択アイテムをハイライト
+        highlightSelectedItem();
+      });
+
+      // アイテムをインベントリに追加
+      inventory.appendChild(itemElement);
+    });
+
+    // 初期選択アイテムをハイライト
+    highlightSelectedItem();
+  }
+
+  // 初期のアイテムインベントリを作成
+  createInventory();
+
+  // マウスホイールで選択アイテムを変更するイベントリスナーを追加
+  document.addEventListener('wheel', (event) => {
+    event.preventDefault();
+
+    // マウスホイールの方向を取得
+    const delta = Math.sign(event.deltaY);
+
+    // 選択アイテムインデックスを更新
+    selectedItemIndex += delta;
+
+    // アイテムのループ処理
+    if (selectedItemIndex < 0) {
+      selectedItemIndex = items.length - 1;
+    } else if (selectedItemIndex >= items.length) {
+      selectedItemIndex = 0;
+    }
+    console.log(items[selectedItemIndex]);
+
+    // 選択アイテムをハイライト
+    highlightSelectedItem();
+  }, {passive: false});
+
+  // 選択アイテムをハイライトする関数
+  function highlightSelectedItem() {
+    const inventoryItems = document.querySelectorAll('.inventory-item');
+
+    // 全てのアイテムのハイライトを解除
+    inventoryItems.forEach((item) => {
+      item.classList.remove('highlight');
+    });
+
+    // 選択アイテムをハイライト
+    inventoryItems[selectedItemIndex].classList.add('highlight');
+  }
+
   // 座標軸を追加
   const axes = new THREE.AxesHelper(100);
   scene.add(axes);
@@ -275,16 +363,6 @@ function init() {
   light.position.set(1, 1, 1); // ライトの方向
   // シーンに追加
   scene.add(light);
-
-  /*
-  // 画面の中央に黒い点を表示するためのマテリアルとジオメトリを作成
-  const pointMaterial = new THREE.PointsMaterial({ color: 0x000000 });
-  // カメラの前方に配置
-  const pointGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -5)]);
-  // ポイントオブジェクトを作成し、シーンに追加
-  const pointObject = new THREE.Points(pointGeometry, pointMaterial);
-  camera.add(pointObject);
-  */
 
   // 初回実行
   tick();

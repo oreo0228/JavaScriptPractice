@@ -1,69 +1,77 @@
-import { PointerLockControls } from "PointerLockControls.js";
+// ページが読み込まれた後に実行されるコード
+window.addEventListener('DOMContentLoaded', () => {
+  // コンテナ要素を取得
+  const container = document.getElementById('canvas-container');
 
-// 必要な変数の初期化
-var container, scene, camera, renderer, controls;
+  // サイズを指定
+  const width = container.clientWidth;
+  const height = container.clientHeight;
 
-// 初期化関数の呼び出し
-init();
+  // レンダラーを作成
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(width, height);
 
-function init() {
-  // コンテナの作成
-  container = document.createElement('div');
-  document.body.appendChild(container);
-
-  // シーンの作成
-  scene = new THREE.Scene();
-
-  // カメラの作成
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
-  camera.position.z = 5;
-
-  // レンダラーの作成
-  renderer = new THREE.WebGLRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  // コンテナにレンダラーのDOM要素を追加
   container.appendChild(renderer.domElement);
 
-  // 箱を作成
-  const geometry = new THREE.SphereGeometry(30, 10, 10);
-  const material = new THREE.MeshPhongMaterial({color: 0xFF0000});
-  const ball = new THREE.Mesh(geometry, material);
-  scene.add(ball);
+  // シーンを作成
+  const scene = new THREE.Scene();
 
-  // コントロールの作成
-  controls = new THREE.PointerLockControlrs(camera, renderer.domElement);
-  scene.add(controls.getObject());
+  // カメラを作成
+  const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+  camera.position.z = 5;
 
-  // マウス移動イベントの追加
-  document.addEventListener('mousemove', onMouseMove, false);
+  // ジオメトリとマテリアルを作成
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+  const cube = new THREE.Mesh(geometry, material);
 
-  // ウィンドウサイズ変更時の処理
-  window.addEventListener('resize', onWindowResize, false);
-}
+  // シーンにオブジェクトを追加
+  scene.add(cube);
 
-// マウス移動イベントの処理
-function onMouseMove(event) {
-  var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-  var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+  // アイテムインベントリの作成
+  const inventory = document.createElement('div');
+  inventory.id = 'inventory';
 
-  // 視点移動
-  controls.getObject().rotation.y -= movementX * 0.002;
-  controls.getObject().rotation.x -= movementY * 0.002;
-}
+  // アイテムの種類とテクスチャを定義
+  const items = [
+    { name: 'item1', texture: 'textures/item1.png' },
+    { name: 'item2', texture: 'textures/item2.png' },
+    { name: 'item3', texture: 'textures/item3.png' },
+    // 追加のアイテムをここに追加
+  ];
 
-// ウィンドウサイズ変更時の処理
-function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
+  // アイテムを表示する要素を作成
+  items.forEach((item) => {
+    const itemElement = document.createElement('div');
+    itemElement.classList.add('inventory-item');
+    itemElement.style.backgroundImage = `url(${item.texture})`;
 
-// レンダリング関数の呼び出し
-render();
+    // アイテムをクリックしたときの処理
+    itemElement.addEventListener('click', () => {
+      // ここにアイテムを使用する処理を追加
+      console.log(`Selected item: ${item.name}`);
+    });
 
-function render() {
-  // フレーム更新
-  requestAnimationFrame(render);
+    // アイテムをインベントリに追加
+    inventory.appendChild(itemElement);
+  });
 
-  // レンダリング
-  renderer.render(scene, camera);
-}
+  // コンテナにアイテムインベントリを追加
+  container.appendChild(inventory);
+
+  // レンダリングループ
+  function animate() {
+    requestAnimationFrame(animate);
+
+    // オブジェクトの回転
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+
+    // レンダリング
+    renderer.render(scene, camera);
+  }
+
+  // レンダリングループを開始
+  animate();
+});
