@@ -1,7 +1,7 @@
 window.addEventListener('DOMContentLoaded', init);
 import * as THREE from "three";
+//import * as CANNON from 'cannon';
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 function init() {
   const width = 1900;
@@ -28,11 +28,50 @@ function init() {
   // シーンを作成
   const scene = new THREE.Scene();
 
+  //aaa
+  const world = new CANNON.World();
+  world.broadphase = new CANNON.NaiveBroadphase(); // 物体検知のオブジェクト
+  world.solver.iterations = 5; // 反復計算回数
+  world.solver.tolerance = 0.1; // 許容値
+  world.gravity.set(0, -9.82, 0); // gravity z = -9.82 m/s²
+
+  // ビューポート用のカメラ
+  const camera2 = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera2.position.set(5, 8, 15);
+
+  // 小さなビューポートのレンダリング
+  const viewportWidth = window.innerWidth / 4; // ビューポートの幅
+  const viewportHeight = window.innerHeight / 4; // ビューポートの高さ
+  const viewportRenderer = new THREE.WebGLRenderer({ alpha: true });
+  viewportRenderer.setSize(viewportWidth, viewportHeight);
+  document.body.appendChild(viewportRenderer.domElement);
+  viewportRenderer.domElement.style.position = 'absolute';
+  viewportRenderer.domElement.style.top = '10px';
+  viewportRenderer.domElement.style.left = '10px';
+
   // カメラを作成
   const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
   // カメラの初期座標を設定（X座標:0, Y座標:0, Z座標:0）
   camera.position.set(4, 3, 2);
   scene.add(camera);
+
+  // 体を作成
+  const mybody = {};
+  {
+    mybody.body = new CANNON.Body({
+      mass: 0, 
+      shape: new CANNON.Box(new CANNON.Vec3(1, 2, 1)),
+      position: new CANNON.Vec3(0, 2, 0),
+    });
+    world.add(mybody.body);
+
+    const texture = new THREE.TextureLoader().load('images/Ground.png');
+    mybody.view = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 4, 2),
+      new THREE.MeshPhongMaterial({map: texture})
+    );
+    scene.add(mybody.view);
+  }
 
   // 画面中央に＋を表示
   const line1 = new THREE.Line(
@@ -101,41 +140,6 @@ function init() {
   // fps取得のための変数
   let prevTime = performance.now();
 
-  function animate() {
-    requestAnimationFrame(animate);
-
-    // fps取得のための変数
-    let time = performance.now();
-
-    // 前進後進判定
-    direction.z = Number(moveForward) - Number(moveBackward);
-    direction.x = Number(moveRight) - Number(moveLeft);
-
-    // 画面をクリックしたら(ポインターが非表示の時)
-    if(controls.isLocked) {
-      const delta = (time - prevTime) / 1000;
-
-      // 減衰
-      velocity.z -= velocity.z * 5.0 * delta;
-      velocity.x -= velocity.x * 5.0 * delta;
-
-      if(moveForward || moveBackward) {
-        velocity.z -= direction.z * 100 * delta;
-      }
-
-      if(moveRight || moveLeft) {
-        velocity.x -= direction.x * 100 * delta;
-      }
-
-      prevTime = time;
-
-      controls.moveForward(-velocity.z * delta);
-      controls.moveRight(-velocity.x * delta);
-    }
-  }
-
-  animate();
-
   // オブジェクトとの衝突判定
   function checkCollision() {
     const rayUpX = new THREE.Raycaster();
@@ -200,6 +204,44 @@ function init() {
     a = 1
     b += 2;
   }
+
+  // 質量を持った地面
+  const ground = {};
+  {
+    ground.body = new CANNON.Body({
+      mass: 0, 
+      shape: new CANNON.Box(new CANNON.Vec3(2, 2, 2)),
+      position: new CANNON.Vec3(0, 0, 0),
+    });
+    world.add(ground.body);
+
+    const texture = new THREE.TextureLoader().load('images/Ground.png');
+    ground.view = new THREE.Mesh(
+      new THREE.BoxGeometry(4, 4, 4),
+      new THREE.MeshPhongMaterial({map: texture})
+    );
+    scene.add(ground.view);
+  }
+
+  // 球の設定
+  const sphere = {};
+  {
+    sphere.body = new CANNON.Body({
+      mass: 1,
+      shape: new CANNON.Sphere(2),
+      position: new CANNON.Vec3(0, 20, 0),
+    });
+    world.add(sphere.body);
+  
+    sphere.view = new THREE.Mesh(
+      new THREE.SphereGeometry(2, 20, 20),
+      new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    sphere.view.castShadow = true;
+    sphere.view.receiveShadow = true;
+    scene.add(sphere.view);
+  }
+
 
   // 地面ブロックの作成
   function createGround(x, y, z) {
@@ -363,6 +405,86 @@ function init() {
   light.position.set(1, 1, 1); // ライトの方向
   // シーンに追加
   scene.add(light);
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    world.step(1.0 / 60.0);
+
+    // カメラ2のビューポートにシーンをレンダリング
+  viewportRenderer.setViewport(0, 0, viewportWidth, viewportHeight);
+  viewportRenderer.setScissor(0, 0, viewportWidth, viewportHeight);
+  viewportRenderer.setScissorTest(true);
+  viewportRenderer.setClearColor(0x000000, 0);
+  viewportRenderer.render(scene, camera2);
+
+
+    // fps取得のための変数
+    let time = performance.now();
+
+    // 前進後進判定
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+
+    
+    // 画面をクリックしたら(ポインターが非表示の時)
+    if(controls.isLocked) {
+      const delta = (time - prevTime) / 1000;
+
+      // 減衰
+      velocity.z -= velocity.z * 5.0 * delta;
+      velocity.x -= velocity.x * 5.0 * delta;
+
+      if(moveForward || moveBackward) {
+        velocity.z -= direction.z * 100 * delta;
+      }
+
+      if(moveRight || moveLeft) {
+        velocity.x -= direction.x * 100 * delta;
+      }
+
+      prevTime = time;
+
+      controls.moveForward(-velocity.z * delta);
+      controls.moveRight(-velocity.x * delta);
+      mybody.body.velocity.z = -velocity.z * delta;
+      mybody.body.velocity.x = -velocity.x * delta;
+    }
+    
+
+    /*
+    // 体とカメラを動かす
+    if(controls.isLocked) {
+      const delta = (time - prevTime) / 1000; //0.017
+
+      if(moveForward) {
+        mybody.body.position.z -= delta * 10;
+      } else if(moveBackward) {
+        mybody.body.position.z += delta * 10;
+      }
+
+      if(moveRight) {
+        mybody.body.position.x += delta * 10;
+      } else if(moveLeft) {
+        mybody.body.position.x -= delta * 10;
+      }
+
+      prevTime = time;
+
+      //controls.moveForward(-velocity.z * delta);
+      //controls.moveRight(-velocity.x * delta);
+    }
+    */
+
+    update(ground);
+    update(sphere);
+    update(mybody);
+  }
+  function update(object) {
+    object.view.position.copy(object.body.position);
+    object.view.quaternion.copy(object.body.quaternion);
+  }
+  animate();
 
   // 初回実行
   tick();
