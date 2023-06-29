@@ -59,9 +59,9 @@ function init() {
   const mybody = {};
   {
     mybody.body = new CANNON.Body({
-      mass: 0, 
+      mass: 1, 
       shape: new CANNON.Box(new CANNON.Vec3(1, 2, 1)),
-      position: new CANNON.Vec3(0, 2, 0),
+      position: new CANNON.Vec3(4, 3, 2),
     });
     world.add(mybody.body);
 
@@ -140,18 +140,6 @@ function init() {
   // fps取得のための変数
   let prevTime = performance.now();
 
-  // オブジェクトとの衝突判定
-  function checkCollision() {
-    const rayUpX = new THREE.Raycaster();
-    const rayUpreX = new THREE.Raycaster();
-    const rayDownX = new THREE.Raycaster();
-    const rayUpY = new THREE.Raycaster();
-    const rayDownY = new THREE.Raycaster();
-    const rayUpZ = new THREE.Raycaster();
-    const rayDownZ = new THREE.Raycaster();
-
-  }
-
   const line = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, -1, 0),
@@ -205,6 +193,27 @@ function init() {
     b += 2;
   }
 
+  function createGround(x, y, z) {
+    // 質量を持った地面
+    const ground = {};
+    {
+      ground.body = new CANNON.Body({
+        mass: 0, 
+        shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1)),
+        position: new CANNON.Vec3(x, y, z),
+      });
+      world.add(ground.body);
+
+      const texture = new THREE.TextureLoader().load('images/Ground.png');
+      ground.view = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 2, 2),
+        new THREE.MeshPhongMaterial({map: texture})
+      );
+      scene.add(ground.view);
+    }
+  }
+
+  /*
   // 質量を持った地面
   const ground = {};
   {
@@ -222,6 +231,8 @@ function init() {
     );
     scene.add(ground.view);
   }
+  */
+  
 
   // 球の設定
   const sphere = {};
@@ -242,7 +253,7 @@ function init() {
     scene.add(sphere.view);
   }
 
-
+  /*
   // 地面ブロックの作成
   function createGround(x, y, z) {
     const texture = new THREE.TextureLoader().load('images/Ground.png');
@@ -253,6 +264,7 @@ function init() {
     cube.name = 'Ground';
     scene.add(cube);
   }
+  */
 
   createTree(5, 1, 5, 5);
 
@@ -412,11 +424,11 @@ function init() {
     world.step(1.0 / 60.0);
 
     // カメラ2のビューポートにシーンをレンダリング
-  viewportRenderer.setViewport(0, 0, viewportWidth, viewportHeight);
-  viewportRenderer.setScissor(0, 0, viewportWidth, viewportHeight);
-  viewportRenderer.setScissorTest(true);
-  viewportRenderer.setClearColor(0x000000, 0);
-  viewportRenderer.render(scene, camera2);
+    viewportRenderer.setViewport(0, 0, viewportWidth, viewportHeight);
+    viewportRenderer.setScissor(0, 0, viewportWidth, viewportHeight);
+    viewportRenderer.setScissorTest(true);
+    viewportRenderer.setClearColor(0x000000, 0);
+    viewportRenderer.render(scene, camera2);
 
 
     // fps取得のための変数
@@ -426,9 +438,18 @@ function init() {
     direction.z = Number(moveForward) - Number(moveBackward);
     direction.x = Number(moveRight) - Number(moveLeft);
 
-    
+    /*
     // 画面をクリックしたら(ポインターが非表示の時)
     if(controls.isLocked) {
+      var myPosition = new THREE.Vector3();
+      var cannonVec = new CANNON.Vec3();
+      var quaternion = new CANNON.Quaternion();
+
+      var axis = new CANNON.Vec3(0, 1, 0);
+      var angle = Math.PI * 2;
+
+      mybody.body.quaternion.setFromAxisAngle(axis, angle);
+
       const delta = (time - prevTime) / 1000;
 
       // 減衰
@@ -447,12 +468,15 @@ function init() {
 
       controls.moveForward(-velocity.z * delta);
       controls.moveRight(-velocity.x * delta);
-      mybody.body.velocity.z = -velocity.z * delta;
-      mybody.body.velocity.x = -velocity.x * delta;
+      myPosition = camera.position;
+      console.log("camera: " + myPosition);
+      cannonVec.copy(myPosition);
+      mybody.body.position = cannonVec;
+      console.log("Body: " + cannonVec);
     }
-    
+    */
 
-    /*
+    
     // 体とカメラを動かす
     if(controls.isLocked) {
       const delta = (time - prevTime) / 1000; //0.017
@@ -474,7 +498,7 @@ function init() {
       //controls.moveForward(-velocity.z * delta);
       //controls.moveRight(-velocity.x * delta);
     }
-    */
+    
 
     update(ground);
     update(sphere);
