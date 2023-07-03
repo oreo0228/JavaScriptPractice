@@ -33,7 +33,7 @@ function init() {
   world.broadphase = new CANNON.NaiveBroadphase(); // 物体検知のオブジェクト
   world.solver.iterations = 5; // 反復計算回数
   world.solver.tolerance = 0.1; // 許容値
-  world.gravity.set(0, -9.82, 0); // gravity z = -9.82 m/s²
+  world.gravity.set(0, 0, 0); // gravity z = -9.82 m/s²
 
   // ビューポート用のカメラ
   const camera2 = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -52,16 +52,16 @@ function init() {
   // カメラを作成
   const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
   // カメラの初期座標を設定（X座標:0, Y座標:0, Z座標:0）
-  camera.position.set(4, 3, 2);
+  camera.position.set(2, 3, 4);
   scene.add(camera);
 
   // 体を作成
   const mybody = {};
   {
     mybody.body = new CANNON.Body({
-      mass: 1, 
+      mass: 0, 
       shape: new CANNON.Box(new CANNON.Vec3(1, 2, 1)),
-      position: new CANNON.Vec3(4, 3, 2),
+      position: new CANNON.Vec3(2, 3, 4),
     });
     world.add(mybody.body);
 
@@ -193,6 +193,7 @@ function init() {
     b += 2;
   }
 
+  /*
   function createGround(x, y, z) {
     // 質量を持った地面
     const ground = {};
@@ -212,8 +213,9 @@ function init() {
       scene.add(ground.view);
     }
   }
+  */
 
-  /*
+  
   // 質量を持った地面
   const ground = {};
   {
@@ -231,16 +233,17 @@ function init() {
     );
     scene.add(ground.view);
   }
-  */
+  
   
 
   // 球の設定
   const sphere = {};
   {
     sphere.body = new CANNON.Body({
-      mass: 1,
+      mass: 0,
       shape: new CANNON.Sphere(2),
-      position: new CANNON.Vec3(0, 20, 0),
+      position: new CANNON.Vec3(8, 3, 6),
+      type: CANNON.Body.STATIC,
     });
     world.add(sphere.body);
   
@@ -253,7 +256,7 @@ function init() {
     scene.add(sphere.view);
   }
 
-  /*
+  
   // 地面ブロックの作成
   function createGround(x, y, z) {
     const texture = new THREE.TextureLoader().load('images/Ground.png');
@@ -264,7 +267,7 @@ function init() {
     cube.name = 'Ground';
     scene.add(cube);
   }
-  */
+  
 
   createTree(5, 1, 5, 5);
 
@@ -407,6 +410,28 @@ function init() {
     inventoryItems[selectedItemIndex].classList.add('highlight');
   }
 
+  //
+  /*
+  function threeToCannonQuaternion(threeQuaternion) {
+    return new CANNON.Quaternion(
+      threeQuaternion.x,
+      threeQuaternion.y,
+      threeQuaternion.z,
+      threeQuaternion.w
+    );
+  }
+  */
+ 
+  function threeToCannonQuaternion(threeQuaternion) {
+    return new CANNON.Quaternion(
+      0,
+      threeQuaternion.y,
+      0,
+      threeQuaternion.w
+    );
+  }
+  
+
   // 座標軸を追加
   const axes = new THREE.AxesHelper(100);
   scene.add(axes);
@@ -418,10 +443,24 @@ function init() {
   // シーンに追加
   scene.add(light);
 
+  var preposi = new CANNON.Vec3();
+  
+  function handleCollision(e) {
+    console.log("collision");
+    const contact = e.contact;
+    const body = contact.bi;
+    const obj = contact.bj;
+
+    body.position.set(preposi);
+  }
+  world.addEventListener('collide', handleCollision);
+
   function animate() {
     requestAnimationFrame(animate);
 
     world.step(1.0 / 60.0);
+
+    preposi = mybody.body.position;
 
     // カメラ2のビューポートにシーンをレンダリング
     viewportRenderer.setViewport(0, 0, viewportWidth, viewportHeight);
@@ -437,6 +476,66 @@ function init() {
     // 前進後進判定
     direction.z = Number(moveForward) - Number(moveBackward);
     direction.x = Number(moveRight) - Number(moveLeft);
+
+    const moveSpeed = 1.0;
+    const force = new CANNON.Vec3();
+
+    // cannon.jsのオブジェクトの操作
+    if(controls.isLocked) {
+      const delta = (time - prevTime) / 1000; //0.017
+      var thQuaternion = new THREE.Quaternion();
+      var caQuaternion = new CANNON.Quaternion();
+
+      var localDirection = new CANNON.Vec3(0, 0, 1);
+      var globalDirectionZ = new CANNON.Vec3();
+      var globalDirectionX = new CANNON.Vec3();
+
+      thQuaternion = camera.quaternion;
+      caQuaternion = threeToCannonQuaternion(thQuaternion);
+      mybody.body.quaternion = caQuaternion;
+
+      const forward = new CANNON.Vec3(0, 0, -1);
+      caQuaternion.vmult(forward, globalDirectionZ);
+      globalDirectionZ.normalize();
+      const right = new CANNON.Vec3(11, 0, 0);
+      caQuaternion.vmult(right, globalDirectionX);
+      globalDirectionX.normalize();
+
+      if(moveForward) {
+        mybody.body.position.x += globalDirectionZ.x * 0.2;
+        mybody.body.position.y += globalDirectionZ.y * 0.2;
+        mybody.body.position.z += globalDirectionZ.z * 0.2;
+        camera.position.x += globalDirectionZ.x * 0.2;
+        camera.position.y += globalDirectionZ.y * 0.2;
+        camera.position.z += globalDirectionZ.z * 0.2;
+      } else if(moveBackward) {
+        mybody.body.position.x -= globalDirectionZ.x * 0.2;
+        mybody.body.position.y -= globalDirectionZ.y * 0.2;
+        mybody.body.position.z -= globalDirectionZ.z * 0.2;
+        camera.position.x -= globalDirectionZ.x * 0.2;
+        camera.position.y -= globalDirectionZ.y * 0.2;
+        camera.position.z -= globalDirectionZ.z * 0.2;
+      }
+
+      if(moveRight) {
+        mybody.body.position.x += globalDirectionX.x * 0.2;
+        mybody.body.position.y += globalDirectionX.y * 0.2;
+        mybody.body.position.z += globalDirectionX.z * 0.2;
+        camera.position.x += globalDirectionX.x * 0.2;
+        camera.position.y += globalDirectionX.y * 0.2;
+        camera.position.z += globalDirectionX.z * 0.2;
+      } else if(moveLeft) {
+        mybody.body.position.x -= globalDirectionX.x * 0.2;
+        mybody.body.position.y -= globalDirectionX.y * 0.2;
+        mybody.body.position.z -= globalDirectionX.z * 0.2;
+        camera.position.x -= globalDirectionX.x * 0.2;
+        camera.position.y -= globalDirectionX.y * 0.2;
+        camera.position.z -= globalDirectionX.z * 0.2;
+      }
+
+    }
+
+    //camera.position.set(mybody.body.position);
 
     /*
     // 画面をクリックしたら(ポインターが非表示の時)
@@ -476,7 +575,7 @@ function init() {
     }
     */
 
-    
+    /*
     // 体とカメラを動かす
     if(controls.isLocked) {
       const delta = (time - prevTime) / 1000; //0.017
@@ -498,6 +597,7 @@ function init() {
       //controls.moveForward(-velocity.z * delta);
       //controls.moveRight(-velocity.x * delta);
     }
+    */
     
 
     update(ground);
