@@ -16,6 +16,8 @@
     background-color: white;
     border-radius: 5px;
     cursor: pointer;
+    background-size: cover; /* 画像を全体に表示 */
+    background-position: center; /* 画像を中央に配置 */
 }
 
 .highlight {

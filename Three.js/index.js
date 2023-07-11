@@ -33,7 +33,7 @@ function init() {
   world.broadphase = new CANNON.NaiveBroadphase(); // 物体検知のオブジェクト
   world.solver.iterations = 5; // 反復計算回数
   world.solver.tolerance = 0.1; // 許容値
-  world.gravity.set(0, 0, 0); // gravity z = -9.82 m/s²
+  world.gravity.set(0, -9.82, 0); // gravity z = -9.82 m/s²
 
   // ビューポート用のカメラ
   const camera2 = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -52,7 +52,7 @@ function init() {
   // カメラを作成
   const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
   // カメラの初期座標を設定（X座標:0, Y座標:0, Z座標:0）
-  camera.position.set(2, 3, 4);
+  camera.position.set(2, 3, 2);
   scene.add(camera);
 
   // 体を作成
@@ -170,9 +170,9 @@ function init() {
 
     if(intersects.length > 0) {
       //console.log(intersects[0]);
-      console.log(intersects[0].normal);
-      console.log(intersects[0].point.x);
-      console.log(intersects[0]);
+      //console.log(intersects[0].normal);
+      //console.log(intersects[0].point.x);
+      //console.log(intersects[0]);
     }
     // レイキャストの結果を返す（必要に応じて処理を実行）
     return ray;
@@ -240,9 +240,9 @@ function init() {
   const sphere = {};
   {
     sphere.body = new CANNON.Body({
-      mass: 0,
+      mass: 1,
       shape: new CANNON.Sphere(2),
-      position: new CANNON.Vec3(8, 3, 6),
+      position: new CANNON.Vec3(1, 6, 1),
       type: CANNON.Body.STATIC,
     });
     world.add(sphere.body);
@@ -284,20 +284,19 @@ function init() {
     }
   }
 
-  // Gキーでブロックを設置
+  // 右クリックでブロックを設置
   const putObject = (e) =>{
-    console.log('putObject');
-    if (e.code === "KeyG") {
+    //console.log('putObject');
+    if (e.button === 2) {
       const ray = generateRaycast();
       // レイキャストにぶつかったオブジェクトを得る
       const intersects = ray.intersectObjects(scene.children);
       // オブジェクトが何もないor5マス以上離れていたら終了
       if (intersects.length === 0) {
         return;
-      } else if (intersects[0].distance > 10) {
+      } else if (intersects[0].distance > 11) {
         return;
       }
-      console.log(intersects[0]);
 
       var pointX = Math.floor(intersects[0].object.position.x);
       var pointY = Math.floor(intersects[0].object.position.y);
@@ -317,12 +316,18 @@ function init() {
       pointY += normal.y * 2;
       pointZ += normal.z * 2;
     
-      putGround(pointX, pointY, pointZ);
-      console.log("Put!");
+      if (selectedItemIndex === 0) {
+        putTree(pointX, pointY, pointZ);
+      } else if (selectedItemIndex === 1) {
+        putGround(pointX, pointY, pointZ);
+      } else if (selectedItemIndex === 2) {
+        return;
+      }
     }  
   }
-  document.addEventListener('keydown', putObject);
+  document.addEventListener('click', putObject);
 
+  // 地面ブロックを設置
   function putGround(x, y, z) {
     const texture = new THREE.TextureLoader().load('images/Ground.png');
     const groundGeometry = new THREE.BoxGeometry(2, 2, 2);
@@ -332,6 +337,35 @@ function init() {
     cube.name = 'Ground';
     scene.add(cube);
   }
+
+  //木ブロックを設置
+  function putTree(x, y, z) {
+    const texture = new THREE.TextureLoader().load('images/Wood.png');
+    const groundGeometry = new THREE.BoxGeometry(2, 2, 2);
+    const groundMaterial = new THREE.MeshPhongMaterial({map: texture});
+    const cube = new THREE.Mesh(groundGeometry, groundMaterial);
+    cube.position.set(x, y, z);
+    cube.name = 'Tree';
+    scene.add(cube);
+  }
+
+  // 左クリックでブロックを削除
+  function removeBlock(e) {
+    if (e.button === 0) {
+      console.log('removeEvent!');
+      const ray = generateRaycast();
+      // レイキャストにぶつかったオブジェクトを得る
+      const intersects = ray.intersectObjects(scene.children);
+      // オブジェクトが何もないor5マス以上離れていたら終了
+      if (intersects.length === 0) {
+        return;
+      } else if (intersects[0].distance > 11) {
+        return;
+      }
+      scene.remove(intersects[0].object);
+    }
+  }
+  document.addEventListener('click', removeBlock);
 
   // アイテムインベントリの選択アイテムインデックス
   let selectedItemIndex = 0;
@@ -442,6 +476,11 @@ function init() {
   light.position.set(1, 1, 1); // ライトの方向
   // シーンに追加
   scene.add(light);
+
+  //
+  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.1);
+  hemisphereLight.position.set(100, 100, 100);
+  scene.add(hemisphereLight);
 
   var preposi = new CANNON.Vec3();
   
