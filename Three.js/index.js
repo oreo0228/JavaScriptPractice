@@ -12,6 +12,8 @@ function init() {
   let moveBackward = false;
   let moveLeft = false;
   let moveRight = false;
+  let moveDown = false;
+  let moveUp = false;
 
   // 移動速度と移動方向
   const velocity = new THREE.Vector3();
@@ -52,14 +54,15 @@ function init() {
   // カメラを作成
   const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
   // カメラの初期座標を設定（X座標:0, Y座標:0, Z座標:0）
-  camera.position.set(2, 3, 2);
+  camera.position.set(3, 3, 3);
   scene.add(camera);
 
   // 体を作成
+  /*
   const mybody = {};
   {
     mybody.body = new CANNON.Body({
-      mass: 0, 
+      mass: 0,
       shape: new CANNON.Box(new CANNON.Vec3(1, 2, 1)),
       position: new CANNON.Vec3(2, 3, 4),
     });
@@ -72,6 +75,15 @@ function init() {
     );
     scene.add(mybody.view);
   }
+  */
+
+  // 体を作成
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 4, 2),
+    new THREE.MeshPhongMaterial({color: 0xffffff,}),
+  );
+  body.raycast = function() {};
+  scene.add(body);
 
   // 画面中央に＋を表示
   const line1 = new THREE.Line(
@@ -92,7 +104,7 @@ function init() {
   line2.raycast = function() {};
   camera.add(line1);
   camera.add(line2);
-  
+
   // 一人称視点
   const controls = new PointerLockControls(camera, document.body);
   window.addEventListener('click', () => {
@@ -137,9 +149,31 @@ function init() {
   document.addEventListener('keydown', onKeyDown);
   document.addEventListener('keyup', onKeyUp);
 
+  // speceキーを押せるかどうか
+  var lastKeyPressTime = 0;
+  var spaceKeyEnabled = true;
+  const spaceKeydown = (e) => {
+    if (e.code === "Space") {
+      var currentTime = Date.now();
+      if (spaceKeyEnabled && currentTime - lastKeyPressTime > 1000) {
+        console.log("Space key");
+        // 一時的にspaceキーを無効化
+        spaceKeyEnabled = false;
+        lastKeyPressTime = currentTime;
+      }
+
+      setTimeout(function() {
+        spaceKeyEnabled = true;
+      }, 1000);
+    }
+  };
+
+  document.addEventListener('keydown', spaceKeydown);
+
   // fps取得のための変数
   let prevTime = performance.now();
 
+  // カメラの向いている方向を示す線
   const line = new THREE.Line(
     new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, -1, 0),
@@ -147,6 +181,7 @@ function init() {
     ]),
     new THREE.MeshNormalMaterial()
   );
+  line.raycast = function() {};
   camera.add(line);
 
   // マウス座標管理用のベクトル
@@ -168,16 +203,42 @@ function init() {
     // レイキャストにぶつかったオブジェクトを得る
     const intersects = ray.intersectObjects(scene.children);
 
-    if(intersects.length > 0) {
-      //console.log(intersects[0]);
-      //console.log(intersects[0].normal);
-      //console.log(intersects[0].point.x);
-      //console.log(intersects[0]);
+    if(intersects.length = 0) {
+      return false;
     }
     // レイキャストの結果を返す（必要に応じて処理を実行）
     return ray;
   }
-  
+
+  // 体の向きからレイキャストを生成
+  function generateRaycastFromUpperBody(direction) {
+    const bodyposi = new THREE.Vector3(
+      body.position.x,
+      body.position.y,
+      body.position.z,
+    );
+    direction.applyQuaternion(body.quaternion);
+
+    var ray = new THREE.Raycaster(bodyposi, direction);
+
+    return ray;
+  }
+
+  function generateRaycastFromLowerBody(direction) {
+    const bodyposi = new THREE.Vector3(
+      body.position.x,
+      body.position.y - 1,
+      body.position.z,
+    );
+    direction.applyQuaternion(body.quaternion);
+
+    var ray = new THREE.Raycaster(bodyposi, direction);
+
+    return ray;
+  }
+
+
+
   // 背景色
   scene.background = new THREE.Color( 0x00CCFF );
 
@@ -193,70 +254,6 @@ function init() {
     b += 2;
   }
 
-  /*
-  function createGround(x, y, z) {
-    // 質量を持った地面
-    const ground = {};
-    {
-      ground.body = new CANNON.Body({
-        mass: 0, 
-        shape: new CANNON.Box(new CANNON.Vec3(1, 1, 1)),
-        position: new CANNON.Vec3(x, y, z),
-      });
-      world.add(ground.body);
-
-      const texture = new THREE.TextureLoader().load('images/Ground.png');
-      ground.view = new THREE.Mesh(
-        new THREE.BoxGeometry(2, 2, 2),
-        new THREE.MeshPhongMaterial({map: texture})
-      );
-      scene.add(ground.view);
-    }
-  }
-  */
-
-  
-  // 質量を持った地面
-  const ground = {};
-  {
-    ground.body = new CANNON.Body({
-      mass: 0, 
-      shape: new CANNON.Box(new CANNON.Vec3(2, 2, 2)),
-      position: new CANNON.Vec3(0, 0, 0),
-    });
-    world.add(ground.body);
-
-    const texture = new THREE.TextureLoader().load('images/Ground.png');
-    ground.view = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 4, 4),
-      new THREE.MeshPhongMaterial({map: texture})
-    );
-    scene.add(ground.view);
-  }
-  
-  
-
-  // 球の設定
-  const sphere = {};
-  {
-    sphere.body = new CANNON.Body({
-      mass: 1,
-      shape: new CANNON.Sphere(2),
-      position: new CANNON.Vec3(1, 6, 1),
-      type: CANNON.Body.STATIC,
-    });
-    world.add(sphere.body);
-  
-    sphere.view = new THREE.Mesh(
-      new THREE.SphereGeometry(2, 20, 20),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    sphere.view.castShadow = true;
-    sphere.view.receiveShadow = true;
-    scene.add(sphere.view);
-  }
-
-  
   // 地面ブロックの作成
   function createGround(x, y, z) {
     const texture = new THREE.TextureLoader().load('images/Ground.png');
@@ -267,7 +264,6 @@ function init() {
     cube.name = 'Ground';
     scene.add(cube);
   }
-  
 
   createTree(5, 1, 5, 5);
 
@@ -348,6 +344,7 @@ function init() {
     cube.name = 'Tree';
     scene.add(cube);
   }
+
 
   // 左クリックでブロックを削除
   function removeBlock(e) {
@@ -455,7 +452,7 @@ function init() {
     );
   }
   */
- 
+
   function threeToCannonQuaternion(threeQuaternion) {
     return new CANNON.Quaternion(
       0,
@@ -464,7 +461,7 @@ function init() {
       threeQuaternion.w
     );
   }
-  
+
 
   // 座標軸を追加
   const axes = new THREE.AxesHelper(100);
@@ -483,7 +480,7 @@ function init() {
   scene.add(hemisphereLight);
 
   var preposi = new CANNON.Vec3();
-  
+
   function handleCollision(e) {
     console.log("collision");
     const contact = e.contact;
@@ -494,12 +491,25 @@ function init() {
   }
   world.addEventListener('collide', handleCollision);
 
+  function something(e) {
+    if (e.code === "KeyK") {
+      console.log("camera:["+ camera.position.x + ","+ camera.position.y + ","+ camera.position.z + "]");
+      console.log("body:["+ body.position.x + ","+ body.position.y + ","+ body.position.z + "]");
+      console.log("lineB:[" + lineB.position.x + ","+ lineB.position.y + ","+ lineB.position.z + "]");
+    }
+  }
+  document.addEventListener("keydown", something);
+
+  // -----------------------------------------------------------------------
+  // animate
+
   function animate() {
     requestAnimationFrame(animate);
+    //var moveDown = true;
 
     world.step(1.0 / 60.0);
 
-    preposi = mybody.body.position;
+    //preposi = mybody.body.position;
 
     // カメラ2のビューポートにシーンをレンダリング
     viewportRenderer.setViewport(0, 0, viewportWidth, viewportHeight);
@@ -519,129 +529,112 @@ function init() {
     const moveSpeed = 1.0;
     const force = new CANNON.Vec3();
 
-    // cannon.jsのオブジェクトの操作
-    if(controls.isLocked) {
-      const delta = (time - prevTime) / 1000; //0.017
-      var thQuaternion = new THREE.Quaternion();
-      var caQuaternion = new CANNON.Quaternion();
-
-      var localDirection = new CANNON.Vec3(0, 0, 1);
-      var globalDirectionZ = new CANNON.Vec3();
-      var globalDirectionX = new CANNON.Vec3();
-
-      thQuaternion = camera.quaternion;
-      caQuaternion = threeToCannonQuaternion(thQuaternion);
-      mybody.body.quaternion = caQuaternion;
-
-      const forward = new CANNON.Vec3(0, 0, -1);
-      caQuaternion.vmult(forward, globalDirectionZ);
-      globalDirectionZ.normalize();
-      const right = new CANNON.Vec3(11, 0, 0);
-      caQuaternion.vmult(right, globalDirectionX);
-      globalDirectionX.normalize();
-
-      if(moveForward) {
-        mybody.body.position.x += globalDirectionZ.x * 0.2;
-        mybody.body.position.y += globalDirectionZ.y * 0.2;
-        mybody.body.position.z += globalDirectionZ.z * 0.2;
-        camera.position.x += globalDirectionZ.x * 0.2;
-        camera.position.y += globalDirectionZ.y * 0.2;
-        camera.position.z += globalDirectionZ.z * 0.2;
-      } else if(moveBackward) {
-        mybody.body.position.x -= globalDirectionZ.x * 0.2;
-        mybody.body.position.y -= globalDirectionZ.y * 0.2;
-        mybody.body.position.z -= globalDirectionZ.z * 0.2;
-        camera.position.x -= globalDirectionZ.x * 0.2;
-        camera.position.y -= globalDirectionZ.y * 0.2;
-        camera.position.z -= globalDirectionZ.z * 0.2;
-      }
-
-      if(moveRight) {
-        mybody.body.position.x += globalDirectionX.x * 0.2;
-        mybody.body.position.y += globalDirectionX.y * 0.2;
-        mybody.body.position.z += globalDirectionX.z * 0.2;
-        camera.position.x += globalDirectionX.x * 0.2;
-        camera.position.y += globalDirectionX.y * 0.2;
-        camera.position.z += globalDirectionX.z * 0.2;
-      } else if(moveLeft) {
-        mybody.body.position.x -= globalDirectionX.x * 0.2;
-        mybody.body.position.y -= globalDirectionX.y * 0.2;
-        mybody.body.position.z -= globalDirectionX.z * 0.2;
-        camera.position.x -= globalDirectionX.x * 0.2;
-        camera.position.y -= globalDirectionX.y * 0.2;
-        camera.position.z -= globalDirectionX.z * 0.2;
-      }
-
-    }
-
-    //camera.position.set(mybody.body.position);
-
-    /*
-    // 画面をクリックしたら(ポインターが非表示の時)
-    if(controls.isLocked) {
-      var myPosition = new THREE.Vector3();
-      var cannonVec = new CANNON.Vec3();
-      var quaternion = new CANNON.Quaternion();
-
-      var axis = new CANNON.Vec3(0, 1, 0);
-      var angle = Math.PI * 2;
-
-      mybody.body.quaternion.setFromAxisAngle(axis, angle);
-
-      const delta = (time - prevTime) / 1000;
-
-      // 減衰
-      velocity.z -= velocity.z * 5.0 * delta;
-      velocity.x -= velocity.x * 5.0 * delta;
-
-      if(moveForward || moveBackward) {
-        velocity.z -= direction.z * 100 * delta;
-      }
-
-      if(moveRight || moveLeft) {
-        velocity.x -= direction.x * 100 * delta;
-      }
-
-      prevTime = time;
-
-      controls.moveForward(-velocity.z * delta);
-      controls.moveRight(-velocity.x * delta);
-      myPosition = camera.position;
-      console.log("camera: " + myPosition);
-      cannonVec.copy(myPosition);
-      mybody.body.position = cannonVec;
-      console.log("Body: " + cannonVec);
-    }
-    */
-
-    /*
     // 体とカメラを動かす
     if(controls.isLocked) {
       const delta = (time - prevTime) / 1000; //0.017
 
+      var front = new THREE.Vector3(0, 0 ,-1);
+      var back = new THREE.Vector3(0, 0, 1);
+      var right = new THREE.Vector3(1, 0, 0);
+      var left = new THREE.Vector3(-1, 0, 0);
+      var down = new THREE.Vector3(0, -1, 0);
+
+      // 前方向と右方向のベクトルを作成
+      const forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      const cameraPosition = camera.position.clone();
+      const rightD = new THREE.Vector3(-forward.z, 0, forward.x);
+      forward.y = 0;
+      rightD.y = 0;
+      const downD = new THREE.Vector3(0, -1, 0);
+
+      // 前方向接触判定
+      var ray_zf = generateRaycastFromUpperBody(front);
+      var objs_zf = ray_zf.intersectObjects(scene.children);
+      if(objs_zf.length > 1) {
+        //console.log("F:",objs_zf[0].distance);
+        if(objs_zf[1].distance < 2) {;
+          moveForward = false;
+        }
+      }
+      // 後方向接触判定
+      var ray_zb = generateRaycastFromUpperBody(back);
+      var objs_zb = ray_zb.intersectObjects(scene.children);
+      if(objs_zb.length > 1) {
+        if(objs_zb[1].distance < 2) {
+          moveBackward = false;
+        }
+      }
+      // 右方向接触判定
+      var ray_zr = generateRaycastFromUpperBody(right);
+      var objs_zr = ray_zr.intersectObjects(scene.children);
+      if(objs_zr.length > 1) {
+        if(objs_zr[1].distance < 2) {
+          moveRight = false;
+        }
+      }
+      // 左方向接触判定
+      var ray_zl = generateRaycastFromUpperBody(left);
+      var objs_zl = ray_zl.intersectObjects(scene.children);
+      if(objs_zl.length > 1) {
+        if(objs_zl[1].distance < 2) {
+          moveLeft = false;
+        }
+      }
+      // 下方向接触判定
+      var ray_zu = generateRaycastFromLowerBody(down);
+      var objs_zu = ray_zu.intersectObjects(scene.children);
+      if(objs_zu.length > 0) {
+        if(objs_zu[0].distance <= 1) {
+          moveDown = false;
+        }
+      } else {
+        cameraPosition.add(downD.multiplyScalar(delta * 15));
+        camera.position.copy(cameraPosition);
+      }
+
+
       if(moveForward) {
-        mybody.body.position.z -= delta * 10;
+        forward.y = 0;
+        cameraPosition.add(forward.multiplyScalar(delta * 15));
+        camera.position.copy(cameraPosition);
       } else if(moveBackward) {
-        mybody.body.position.z += delta * 10;
+        forward.y = 0;
+        cameraPosition.add(forward.multiplyScalar(-delta * 15));
+        camera.position.copy(cameraPosition);
       }
 
       if(moveRight) {
-        mybody.body.position.x += delta * 10;
+        rightD.y = 0;
+        cameraPosition.add(rightD.multiplyScalar(delta * 15));
+        camera.position.copy(cameraPosition);
       } else if(moveLeft) {
-        mybody.body.position.x -= delta * 10;
+        rightD.y = 0;
+        cameraPosition.add(rightD.multiplyScalar(-delta * 15));
+        camera.position.copy(cameraPosition);
       }
 
       prevTime = time;
+      //prePosition = camera.position;
 
       //controls.moveForward(-velocity.z * delta);
       //controls.moveRight(-velocity.x * delta);
     }
-    */
-    
 
-    update(ground);
-    update(sphere);
-    update(mybody);
+
+    //update(ground);
+    //update(sphere);
+    //update(mybody);
+    var cameraquaternion = camera.quaternion;
+    var euler = new THREE.Euler().setFromQuaternion(cameraquaternion, 'YXZ');
+    var rotationY = euler.y;
+    const bodyPosi = new THREE.Vector3(
+      camera.position.x,
+      camera.position.y - 1,
+      camera.position.z
+    );
+    body.position.copy(bodyPosi);
+    body.quaternion.setFromEuler(new THREE.Euler(0, euler.y, 0));
   }
   function update(object) {
     object.view.position.copy(object.body.position);
