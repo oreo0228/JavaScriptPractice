@@ -156,7 +156,7 @@ function init() {
     if (e.code === "Space") {
       var currentTime = Date.now();
       if (spaceKeyEnabled && currentTime - lastKeyPressTime > 1000) {
-        console.log("Space key");
+        moveUp = true;
         // 一時的にspaceキーを無効化
         spaceKeyEnabled = false;
         lastKeyPressTime = currentTime;
@@ -167,7 +167,6 @@ function init() {
       }, 1000);
     }
   };
-
   document.addEventListener('keydown', spaceKeydown);
 
   // fps取得のための変数
@@ -311,15 +310,15 @@ function init() {
       pointX += normal.x * 2;
       pointY += normal.y * 2;
       pointZ += normal.z * 2;
-    
+
       if (selectedItemIndex === 0) {
         putTree(pointX, pointY, pointZ);
       } else if (selectedItemIndex === 1) {
         putGround(pointX, pointY, pointZ);
       } else if (selectedItemIndex === 2) {
-        return;
+        putLeaves(pointX, pointY, pointZ);
       }
-    }  
+    }
   }
   document.addEventListener('click', putObject);
 
@@ -342,6 +341,17 @@ function init() {
     const cube = new THREE.Mesh(groundGeometry, groundMaterial);
     cube.position.set(x, y, z);
     cube.name = 'Tree';
+    scene.add(cube);
+  }
+
+  //木ブロックを設置
+  function putLeaves(x, y, z) {
+    const texture = new THREE.TextureLoader().load('images/leaves.png');
+    const groundGeometry = new THREE.BoxGeometry(2, 2, 2);
+    const groundMaterial = new THREE.MeshPhongMaterial({map: texture});
+    const cube = new THREE.Mesh(groundGeometry, groundMaterial);
+    cube.position.set(x, y, z);
+    cube.name = 'Leaves';
     scene.add(cube);
   }
 
@@ -371,7 +381,7 @@ function init() {
   const items = [
     { name: 'Wood', texture: 'images/wood.png' },
     { name: 'Ground', texture: 'images/Ground.png' },
-    { name: 'item3', texture: 'images/tya.png' },
+    { name: 'Leaves', texture: 'images/leaves.png' },
     // 追加のアイテムをここに追加
   ];
 
@@ -500,6 +510,23 @@ function init() {
   }
   document.addEventListener("keydown", something);
 
+
+  var cameraJumpHeight = 2; // ジャンプの高さ
+  var cameraJumpDuration = 500; // ジャンプのアニメーションの時間（ミリ秒）
+  var cameraJumpStartTime = null; // ジャンプのアニメーション開始時刻
+
+  // if(moveUp && cameraJumpStartTime === null) {
+  //   cameraJumpStartTime = Date.now();
+  //   moveUp = false;
+  // }
+  document.addEventListener('keydown', function(event) {
+    if (event.code === 'Space' && cameraJumpStartTime === null) {
+      cameraJumpStartTime = Date.now();
+    }
+  });
+
+
+
   // -----------------------------------------------------------------------
   // animate
 
@@ -538,6 +565,7 @@ function init() {
       var right = new THREE.Vector3(1, 0, 0);
       var left = new THREE.Vector3(-1, 0, 0);
       var down = new THREE.Vector3(0, -1, 0);
+      var up = new THREE.Vector3(0, 1, 0);
 
       // 前方向と右方向のベクトルを作成
       const forward = new THREE.Vector3();
@@ -546,7 +574,6 @@ function init() {
       const rightD = new THREE.Vector3(-forward.z, 0, forward.x);
       forward.y = 0;
       rightD.y = 0;
-      const downD = new THREE.Vector3(0, -1, 0);
 
       // 前方向接触判定
       var ray_zf = generateRaycastFromUpperBody(front);
@@ -585,11 +612,16 @@ function init() {
       var ray_zu = generateRaycastFromLowerBody(down);
       var objs_zu = ray_zu.intersectObjects(scene.children);
       if(objs_zu.length > 0) {
+        console.log(objs_zu.length);
+        console.log(objs_zu[0].distance);
         if(objs_zu[0].distance <= 1) {
           moveDown = false;
+        } else {
+          cameraPosition.add(down.multiplyScalar(delta * 15));
+          camera.position.copy(cameraPosition);
         }
       } else {
-        cameraPosition.add(downD.multiplyScalar(delta * 15));
+        cameraPosition.add(down.multiplyScalar(delta * 15));
         camera.position.copy(cameraPosition);
       }
 
@@ -612,6 +644,19 @@ function init() {
         rightD.y = 0;
         cameraPosition.add(rightD.multiplyScalar(-delta * 15));
         camera.position.copy(cameraPosition);
+      }
+
+      if (cameraJumpStartTime !== null) {
+        var currentTime = Date.now();
+        var elapsedTime = currentTime - cameraJumpStartTime;
+        var progress = Math.min(elapsedTime / cameraJumpDuration, 1); // 進行度（0〜1）
+
+        var jumpDistance = Math.sin(progress * Math.PI) * cameraJumpHeight;
+        camera.position.y = jumpDistance * 2; // 2マス分の距離に対応させる
+
+        if (progress === 1) {
+          cameraJumpStartTime = null;
+        }
       }
 
       prevTime = time;
